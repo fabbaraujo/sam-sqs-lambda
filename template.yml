@@ -1,0 +1,40 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Description: >-
+  sam-sqs-lambda
+
+Transform:
+- AWS::Serverless-2016-10-31
+
+Resources:
+  SimpleQueue:
+    Type: AWS::SQS::Queue
+    
+  QueueConsumerFunction:
+    Type: AWS::Serverless::Function 
+    Properties:
+      CodeUri: src/
+      Handler: lambda.handler
+      Runtime: nodejs14.x
+      Environment:
+        Variables:
+          AWS_DYNAMODB_TABLE: TableTest
+          AWS_DYNAMODB_ENDPOINT: http://172.17.0.1:4566
+          AWS_DEFAULT_REGION: us-east-1
+      Timeout: 30
+      MemorySize: 512
+      # ReservedConcurrentExecutions: 1
+      Policies:  
+        - SQSPollerPolicy:
+            QueueName: !GetAtt SimpleQueue.QueueName
+      Events:
+        MySQSEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt SimpleQueue.Arn
+            BatchSize: 10
+
+Outputs:
+  QueueConsumerFunction:
+    Description: QueueConsumerFunction function name
+    Value: !Ref QueueConsumerFunction
